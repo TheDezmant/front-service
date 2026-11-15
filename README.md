@@ -1,75 +1,90 @@
-# React + TypeScript + Vite
+# Todo — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-интерфейс списка задач: регистрация и вход по email/паролю, создание, просмотр, редактирование, удаление задач и отметка выполнения чекбоксом.
 
-Currently, two official plugins are available:
+Стек: **React 19**, **TypeScript**, **Vite**, **Ant Design 6**, **Tailwind CSS 4**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Backend находится в отдельном репозитории [backend-service](https://github.com/TheDezmant/backend-service).
 
-## React Compiler
+## Требования
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Инструмент | Версия |
+|---|---|
+| **Node.js** | **24.x LTS** (проверено на v24.18.0, минимум 24.0.0) |
+| npm | 11.x |
+| Docker + Docker Compose | Docker 24+ / Compose v2.20+ (нужна поддержка `include`) |
 
-## Expanding the ESLint configuration
+## Быстрый старт — всё приложение одной командой
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Склонируйте оба репозитория в одну папку:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+git clone https://github.com/TheDezmant/backend-service.git
+git clone https://github.com/TheDezmant/front-service.git
+cd front-service
+docker compose up --build
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+`docker-compose.yml` фронтенда подключает compose-файл бэкенда (`../backend-service/docker-compose.yml`), поэтому одна команда поднимает:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Сервис | Адрес |
+|---|---|
+| Фронтенд (nginx) | http://localhost:8080 |
+| API | http://localhost:4000 |
+| PostgreSQL | localhost:5432 |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Откройте **http://localhost:8080**, зарегистрируйтесь и пользуйтесь.
+
+Остановить: `docker compose down` (с удалением данных БД: `docker compose down -v`).
+
+## Локальная разработка
+
+1. Запустите бэкенд (см. README в `backend-service`), например: `cd ../backend-service && docker compose up --build`.
+2. Запустите фронтенд:
+
+```bash
+npm install
+cp .env.example .env    # при необходимости укажите другой адрес API
+npm run dev
+```
+
+Приложение откроется на http://localhost:5173 (этот адрес разрешён в CORS бэкенда по умолчанию).
+
+## Скрипты
+
+| Команда | Назначение |
+|---|---|
+| `npm run dev` | Dev-сервер Vite с HMR |
+| `npm run build` | Проверка типов и production-сборка в `dist/` |
+| `npm run preview` | Просмотр production-сборки |
+| `npm run lint` | ESLint |
+
+## Переменные окружения
+
+| Переменная | Описание | По умолчанию |
+|---|---|---|
+| `VITE_API_URL` | Адрес backend API (встраивается в бандл при сборке) | `http://localhost:4000` |
+
+> Значения `VITE_*` попадают в клиентский бандл — не храните в них секреты.
+
+## Структура
 
 ```
+src/
+  api/          — типизированный HTTP-клиент (fetch), типы и методы API
+  auth/         — контекст авторизации (токен, текущий пользователь, вход/выход)
+  pages/        — страницы: вход/регистрация и список задач
+  todos/        — компоненты задач, хук useTodos, правила валидации форм
+  lib/          — перенос ошибок валидации сервера в поля формы
+```
+
+## Возможности
+
+- Регистрация (с подтверждением пароля) и вход; сессия восстанавливается после перезагрузки страницы.
+- Задача: заголовок, описание, время создания, чекбокс выполнения.
+- Создание, редактирование (модальное окно), удаление (с подтверждением), переключение статуса.
+- Фильтр: все / активные / выполненные, счётчик выполненных.
+- Клиентская валидация форм, отображение ошибок сервера в полях, сообщения об успехе/ошибке.
+- Состояния загрузки, ошибки (с повтором) и пустого списка.
+- Автоматический выход при истечении токена (ответ 401).
+- Адаптивная вёрстка, семантическая разметка, `aria`-подписи для иконок-кнопок и чекбоксов.
