@@ -1,6 +1,6 @@
 import { LogoutOutlined, ReloadOutlined } from '@ant-design/icons';
-import { App, Button, Card, Empty, List, Result, Segmented, Skeleton, Typography } from 'antd';
-import { useMemo, useState } from 'react';
+import { App, Button, Card, Empty, List, Result, Skeleton, Typography } from 'antd';
+import { useState } from 'react';
 import type { Todo, User } from '../api/types';
 import { useAuth } from '../auth/useAuth';
 import { TodoEditModal } from '../todos/TodoEditModal';
@@ -8,25 +8,15 @@ import { TodoForm } from '../todos/TodoForm';
 import { TodoItem } from '../todos/TodoItem';
 import { useTodos } from '../todos/useTodos';
 
-type Filter = 'all' | 'active' | 'completed';
-
-const FILTERS: Record<Filter, (t: Todo) => boolean> = {
-  all: () => true,
-  active: (t) => !t.completed,
-  completed: (t) => t.completed,
-};
-
 const errorText = (e: unknown): string => (e instanceof Error ? e.message : 'Неизвестная ошибка');
 
 export function TodosPage({ user }: { readonly user: User }) {
   const { logout } = useAuth();
   const { message } = App.useApp();
   const { state, reload, create, update, remove } = useTodos();
-  const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<Todo | null>(null);
 
-  const items = useMemo(() => (state.status === 'ready' ? state.items : []), [state]);
-  const visible = useMemo(() => items.filter(FILTERS[filter]), [items, filter]);
+  const items = state.status === 'ready' ? state.items : [];
   const doneCount = items.filter((t) => t.completed).length;
 
   const showError = (msg: string) => void message.error(msg);
@@ -107,31 +97,14 @@ export function TodosPage({ user }: { readonly user: User }) {
           )}
 
           {state.status === 'ready' && (
-            <>
-              <Segmented<Filter>
-                className="!mb-2"
-                value={filter}
-                onChange={setFilter}
-                options={[
-                  { label: 'Все', value: 'all' },
-                  { label: 'Активные', value: 'active' },
-                  { label: 'Выполненные', value: 'completed' },
-                ]}
-                aria-label="Фильтр задач"
-              />
-              <List
-                dataSource={visible}
-                rowKey="id"
-                locale={{
-                  emptyText: (
-                    <Empty description={items.length === 0 ? 'Задач пока нет — добавьте первую' : 'Нет задач в этом фильтре'} />
-                  ),
-                }}
-                renderItem={(todo) => (
-                  <TodoItem todo={todo} onToggle={handleToggle} onEdit={setEditing} onDelete={handleDelete} />
-                )}
-              />
-            </>
+            <List
+              dataSource={items}
+              rowKey="id"
+              locale={{ emptyText: <Empty description="Задач пока нет — добавьте первую" /> }}
+              renderItem={(todo) => (
+                <TodoItem todo={todo} onToggle={handleToggle} onEdit={setEditing} onDelete={handleDelete} />
+              )}
+            />
           )}
         </Card>
       </main>
