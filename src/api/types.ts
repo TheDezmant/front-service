@@ -23,6 +23,12 @@ export interface Todo {
   readonly updatedAt: string;
 }
 
+export interface TodoPage {
+  readonly items: readonly Todo[];
+  /** null — больше задач нет. */
+  readonly nextCursor: string | null;
+}
+
 export interface CreateTodoInput {
   readonly title: string;
   readonly description?: string;

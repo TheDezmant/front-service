@@ -13,13 +13,18 @@ const errorText = (e: unknown): string => (e instanceof Error ? e.message : 'Н�
 export function TodosPage({ user }: { readonly user: User }) {
   const { logout } = useAuth();
   const { message } = App.useApp();
-  const { state, reload, create, update, remove } = useTodos();
+  const { state, reload, loadMore, create, update, remove } = useTodos();
   const [editing, setEditing] = useState<Todo | null>(null);
 
-  const items = state.status === 'ready' ? state.items : [];
-  const doneCount = items.filter((t) => t.completed).length;
-
   const showError = (msg: string) => void message.error(msg);
+
+  const handleLoadMore = async () => {
+    try {
+      await loadMore();
+    } catch (e: unknown) {
+      showError(errorText(e));
+    }
+  };
 
   const handleToggle = async (todo: Todo) => {
     try {
@@ -71,16 +76,7 @@ export function TodosPage({ user }: { readonly user: User }) {
           <TodoForm onCreate={handleCreate} onError={showError} />
         </Card>
 
-        <Card
-          title={<h2 className="m-0 text-base font-semibold">Список</h2>}
-          extra={
-            state.status === 'ready' && (
-              <span className="text-sm text-slate-500" aria-live="polite">
-                Выполнено {doneCount} из {items.length}
-              </span>
-            )
-          }
-        >
+        <Card title={<h2 className="m-0 text-base font-semibold">Список</h2>}>
           {state.status === 'loading' && <Skeleton active paragraph={{ rows: 4 }} />}
 
           {state.status === 'error' && (
@@ -98,12 +94,21 @@ export function TodosPage({ user }: { readonly user: User }) {
 
           {state.status === 'ready' && (
             <List
-              dataSource={items}
+              dataSource={state.items}
               rowKey="id"
               locale={{ emptyText: <Empty description="Задач пока нет — добавьте первую" /> }}
               renderItem={(todo) => (
                 <TodoItem todo={todo} onToggle={handleToggle} onEdit={setEditing} onDelete={handleDelete} />
               )}
+              loadMore={
+                state.nextCursor && (
+                  <div className="mt-4 text-center">
+                    <Button onClick={() => void handleLoadMore()} loading={state.loadingMore}>
+                      Показать ещё
+                    </Button>
+                  </div>
+                )
+              }
             />
           )}
         </Card>
