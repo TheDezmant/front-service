@@ -5,7 +5,7 @@ import { TodosPage } from './pages/TodosPage';
 
 export default function App() {
   const { state } = useAuth();
-
+  console.log("Я не читирил")
   switch (state.status) {
     case 'loading':
       return (
